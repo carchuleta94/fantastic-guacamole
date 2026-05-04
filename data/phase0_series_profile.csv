@@ -1,0 +1,9 @@
+series_id,metric_name,native_frequency,units,seasonal_adjustment,start_date,end_date,obs_count,missing_count,missing_pct
+CCLACBW027SBOG,"Consumer Loans: Credit Cards and Other Revolving Plans, All Commercial Banks",W,Billions of U.S. Dollars,SA,2000-06-28,2026-04-22,1348,0,0.0
+DFF,Federal Funds Effective Rate,D,Percent,NSA,1954-07-01,2026-04-30,26237,0,0.0
+DGS10,"Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis",D,Percent,NSA,1962-01-02,2026-04-30,16783,716,4.2662
+DGS2,"Market Yield on U.S. Treasury Securities at 2-Year Constant Maturity, Quoted on an Investment Basis",D,Percent,NSA,1976-06-01,2026-04-30,13023,548,4.2079
+DRCCLACBS,"Delinquency Rate on Credit Card Loans, All Commercial Banks",Q,Percent,SA,1991-01-01,2025-10-01,140,0,0.0
+SOFR,Secured Overnight Financing Rate,D,Percent,NSA,2018-04-03,2026-05-01,2109,91,4.3148
+TOTALSL,Total Consumer Credit Owned and Securitized,M,Millions of U.S. Dollars,SA,1943-01-01,2026-02-01,998,0,0.0
+UNRATE,Unemployment Rate,M,Percent,SA,1948-01-01,2026-03-01,939,1,0.1065
