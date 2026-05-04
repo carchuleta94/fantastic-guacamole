@@ -7,7 +7,7 @@
 - **Notes:** Bronze intentionally stores full JSON payloads; flattening occurs in silver.
 - **Next:** Parse and upsert into `silver.fred_series` and `silver.fred_observation`.
 
-![Bronze run log](docs/images/bronze_run_log.png)
+![Bronze run log](bronze_run_log.png)
 
 ---
 
