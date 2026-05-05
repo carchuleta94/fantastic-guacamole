@@ -277,9 +277,7 @@ WHERE f.cc_delinquency_rate IS NOT NULL
 ORDER BY f.month_key;
 ```
 
-![Silver to Gold Validation 4](silv_gold_validation_4.png)
-
-- **Notes:** Validation 3 is intentionally text-only evidence (`COUNT(*) = 1`) unless screenshot is later added. This reconciliation block is the sign-off gate before composite-score implementation.
+- **Notes:** Validation 3 and Validation 4 are intentionally text-only evidence in this log. This reconciliation block is the sign-off gate before composite-score implementation.
 - **Next:** Execute Checks 5-6 (frontier lag + rerun idempotence), then implement `stress_index` v1.
 
 ---
@@ -346,10 +344,111 @@ WHERE pipeline_name = 'build_gold_consumer_finance_monthly'
 ORDER BY run_log_id DESC;
 ```
 
-![Silver to Gold Validation 6](silv_gold_validation_6.png)
+- **Notes:** A non-changing row count across reruns (`1001 -> 1001`) indicates idempotent load behavior at the fact-table grain. Validation 6 is intentionally text-only evidence in this log.
+- **Next:** Implement and validate `stress_index` v1, then harden proc observability.
 
-- **Notes:** A non-changing row count across reruns (`1001 -> 1001`) indicates idempotent load behavior at the fact-table grain. Merge affected rows can still appear due to rerun updates; this can be tightened later with `WHEN MATCHED AND (...)` change detection.
-- **Next:** Define and implement `stress_index` v1 (clear formula + rationale), then validate trend behavior in Tableau.
+---
+
+## 2026-05-05 Stress Index Validation (Post-Implementation)
+
+- **Step:** Updated `ops.usp_build_gold_consumer_finance_monthly` to compute `stress_index` from z-scored components using the maintainability-first stats CTE approach, then re-ran the gold build.
+- **Outcome:** Stress index populated as expected for rows with sufficient component coverage, with reasonable distribution characteristics.
+- **Evidence:**
+  - Gold run logs show `SUCCESS` with readable action counts (`inserted`, `updated`) after merge-change detection update.
+  - Stress index populated in `fantastic_guacamole.gold.fact_consumer_finance_monthly` (no longer entirely NULL).
+  - Distribution sanity check returned:
+    - `non_null_stress_rows = 940`
+    - `min_stress = -1.8547`
+    - `max_stress = 2.4777`
+    - `avg_stress = -0.0538`
+  - Dim-date FK integrity remained clean (`missing_dim_date_keys = 0`).
+
+- **Validation 1 (stress field population):**
+```sql
+SELECT TOP 40
+    month_key,
+    unemployment_rate,
+    cc_delinquency_rate,
+    dff_avg,
+    t10y2y_avg,
+    stress_index
+FROM fantastic_guacamole.gold.fact_consumer_finance_monthly
+ORDER BY month_key DESC;
+```
+![Stress Validation 1](stress_validation_1.png)
+
+- **Validation 2 (stress distribution sanity):**
+```sql
+SELECT
+    COUNT(*) AS non_null_stress_rows,
+    MIN(stress_index) AS min_stress,
+    MAX(stress_index) AS max_stress,
+    AVG(CAST(stress_index AS FLOAT)) AS avg_stress
+FROM fantastic_guacamole.gold.fact_consumer_finance_monthly
+WHERE stress_index IS NOT NULL;
+```
+![Stress Validation 2](stress_validation_2.png)
+
+- **Validation 3 (dim-date FK integrity):**
+```sql
+SELECT COUNT(*) AS missing_dim_date_keys
+FROM fantastic_guacamole.gold.fact_consumer_finance_monthly f
+LEFT JOIN fantastic_guacamole.gold.dim_date d
+  ON d.date_key = f.month_key
+WHERE d.date_key IS NULL;
+```
+![Stress Validation 3](stress_validation_3.png)
+
+- **Notes:** Null-elimination warnings during aggregate calculations are expected because slower-cadence series naturally contain NULLs in frontier months.
+- **Next:** Validate downstream dashboard calculations in Tableau and document stress-index interpretation in README.
+
+---
+
+## 2026-05-05 Proc Observability + Change-Detection Refactor
+
+- **Step:** Refactored both gold and silver stored procedures for cleaner operations telemetry and idempotent-style updates.
+- **Outcome:** Logs are more informative and reruns are easier to reason about.
+- **Evidence:**
+  - `ops.usp_build_gold_consumer_finance_monthly` now logs `inserted` vs `updated` counts and uses run-level timestamp variables.
+  - `ops.usp_load_silver_from_bronze` successfully processed a new bronze run after refactor:
+    - `run_id = E3040F9B-DE22-4699-8DD4-2BE7270A43C6`
+    - `status = SUCCESS`
+    - `total_rows_staged = 48557`
+    - `total_rows_inserted = 3`
+    - `total_rows_updated = 48554`
+  - Silver tracker and pipeline logs show coherent started/finished timestamps for the run.
+
+```sql
+SELECT TOP 10
+    run_log_id,
+    pipeline_name,
+    run_id,
+    status,
+    message,
+    started_utc_dt,
+    finished_utc_dt
+FROM fantastic_guacamole.ops.pipeline_run_log
+WHERE pipeline_name IN ('build_gold_consumer_finance_monthly','load_silver_from_bronze')
+ORDER BY run_log_id DESC;
+
+SELECT TOP 10
+    silver_load_tracker_id,
+    run_id,
+    pipeline_name,
+    status,
+    total_rows_staged,
+    total_rows_inserted,
+    total_rows_updated,
+    started_utc_dt,
+    finished_utc_dt
+FROM fantastic_guacamole.ops.silver_load_tracker
+ORDER BY silver_load_tracker_id DESC;
+```
+
+![Bronze Silver Reload Validation 1](bronze_silver_reload_validation_1.png)
+
+- **Notes:** High update counts on first post-refactor reruns are expected when new logic or derived fields are introduced.
+- **Next:** Final documentation pass (`README` + method notes) and Tableau build-out.
 
 ---
 

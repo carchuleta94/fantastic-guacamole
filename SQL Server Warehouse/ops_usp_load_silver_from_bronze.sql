@@ -86,6 +86,8 @@ BEGIN
     DECLARE @end_row INT;
     DECLARE @max_row INT;
     DECLARE @err NVARCHAR(2000);
+    DECLARE @run_started_utc DATETIME2(0);
+    DECLARE @run_finished_utc DATETIME2(0);
 
     DECLARE run_cursor CURSOR LOCAL FAST_FORWARD FOR
         SELECT run_id
@@ -102,6 +104,7 @@ BEGIN
             SET @total_rows_staged = 0;
             SET @total_rows_inserted = 0;
             SET @total_rows_updated = 0;
+            SET @run_started_utc = SYSUTCDATETIME();
 
             -- START tracker row
             INSERT INTO ops.silver_load_tracker (
@@ -112,7 +115,7 @@ BEGIN
             VALUES (
                 @current_run_id, @pipeline_name, 'bronze', 'silver', 'STARTED',
                 @batch_size, NULL, NULL, NULL,
-                NULL, SYSUTCDATETIME(), NULL, SYSUTCDATETIME(), SYSUTCDATETIME()
+                NULL, @run_started_utc, NULL, @run_started_utc, @run_started_utc
             );
 
             SET @tracker_id = SCOPE_IDENTITY();
@@ -125,7 +128,7 @@ BEGIN
             VALUES (
                 @pipeline_name, @current_run_id, NULL, 'STARTED',
                 'Silver load started for run_id',
-                NULL, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()
+                NULL, NULL, @run_started_utc, NULL
             );
 
             --------------------------------------------------------
@@ -150,17 +153,24 @@ BEGIN
                     ON sm.series_id = rs.series_id
             ) AS src
             ON tgt.series_id = src.series_id
-            WHEN MATCHED THEN
+            WHEN MATCHED AND (
+                ISNULL(tgt.series_name, '') <> ISNULL(src.series_name, '')
+                OR ISNULL(tgt.native_frequency, '') <> ISNULL(src.native_frequency, '')
+                OR ISNULL(tgt.units, '') <> ISNULL(src.units, '')
+                OR ISNULL(tgt.seasonal_adjustment, '') <> ISNULL(src.seasonal_adjustment, '')
+                OR ISNULL(tgt.source, '') <> ISNULL(src.source_name, '')
+            )
+            THEN
                 UPDATE SET
                     tgt.series_name = src.series_name,
                     tgt.native_frequency = src.native_frequency,
                     tgt.units = src.units,
                     tgt.seasonal_adjustment = src.seasonal_adjustment,
                     tgt.source = src.source_name,
-                    tgt.last_refreshed_ts_utc = SYSUTCDATETIME()
+                    tgt.last_refreshed_ts_utc = @run_started_utc
             WHEN NOT MATCHED THEN
                 INSERT (series_id, series_name, native_frequency, units, seasonal_adjustment, source, last_refreshed_ts_utc)
-                VALUES (src.series_id, src.series_name, src.native_frequency, src.units, src.seasonal_adjustment, src.source_name, SYSUTCDATETIME());
+                VALUES (src.series_id, src.series_name, src.native_frequency, src.units, src.seasonal_adjustment, src.source_name, @run_started_utc);
 
             --------------------------------------------------------
             -- Parse bronze JSON into staging
@@ -250,7 +260,7 @@ BEGIN
                     tgt.native_frequency = src.native_frequency,
                     tgt.run_id = src.source_run_id,
                     tgt.source_raw_id = src.source_raw_id,
-                    tgt.ingestion_ts_utc = SYSUTCDATETIME()
+                    tgt.ingestion_ts_utc = @run_started_utc
                 WHEN NOT MATCHED BY TARGET
                 THEN INSERT (
                     series_id, observation_date, observation_value, is_missing,
@@ -258,7 +268,7 @@ BEGIN
                 )
                 VALUES (
                     src.series_id, src.observation_date, src.observation_value, src.is_missing,
-                    src.native_frequency, src.source_run_id, src.source_raw_id, SYSUTCDATETIME()
+                    src.native_frequency, src.source_run_id, src.source_raw_id, @run_started_utc
                 )
                 OUTPUT $action INTO #merge_actions(action_name);
 
@@ -273,6 +283,8 @@ BEGIN
             --------------------------------------------------------
             -- Mark SUCCESS
             --------------------------------------------------------
+            SET @run_finished_utc = SYSUTCDATETIME();
+
             UPDATE ops.silver_load_tracker
             SET
                 status = 'SUCCESS',
@@ -280,8 +292,8 @@ BEGIN
                 total_rows_inserted = @total_rows_inserted,
                 total_rows_updated = @total_rows_updated,
                 error_message = NULL,
-                finished_utc_dt = SYSUTCDATETIME(),
-                modified_utc_dt = SYSUTCDATETIME()
+                finished_utc_dt = @run_finished_utc,
+                modified_utc_dt = @run_finished_utc
             WHERE silver_load_tracker_id = @tracker_id;
 
             INSERT INTO ops.pipeline_run_log (
@@ -295,18 +307,19 @@ BEGIN
                     ', inserted=', @total_rows_inserted,
                     ', updated=', @total_rows_updated
                 ),
-                NULL, @total_rows_staged, SYSUTCDATETIME(), SYSUTCDATETIME()
+                NULL, @total_rows_staged, @run_started_utc, @run_finished_utc
             );
         END TRY
         BEGIN CATCH
             SET @err = LEFT(ERROR_MESSAGE(), 1900);
+            SET @run_finished_utc = SYSUTCDATETIME();
 
             UPDATE ops.silver_load_tracker
             SET
                 status = 'FAILED',
                 error_message = @err,
-                finished_utc_dt = SYSUTCDATETIME(),
-                modified_utc_dt = SYSUTCDATETIME()
+                finished_utc_dt = @run_finished_utc,
+                modified_utc_dt = @run_finished_utc
             WHERE silver_load_tracker_id = @tracker_id;
 
             INSERT INTO ops.pipeline_run_log (
@@ -315,7 +328,7 @@ BEGIN
             )
             VALUES (
                 @pipeline_name, @current_run_id, NULL, 'FAILED',
-                @err, NULL, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()
+                @err, NULL, NULL, @run_started_utc, @run_finished_utc
             );
         END CATCH;
 
