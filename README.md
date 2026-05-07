@@ -1,6 +1,6 @@
 ## Consumer Finance Health Monitor
 
-A portfolio to showcase technical ability to design an end to end reporting project.  This highlights skills across all stages beginning with initial EDA and planning and execution of the pipeline build, all the way through to creation and publishing of a comprehensive dashboard with plans for future iteration.
+A portfolio to showcase technical ability to design an end to end reporting project.  This highlights skills across all stages beginning with initial EDA and planning, execution of the pipeline build, all the way through to creation and publishing of a comprehensive dashboard with plans for future iteration.
 
 ## Objective
 
