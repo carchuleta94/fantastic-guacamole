@@ -452,6 +452,44 @@ ORDER BY silver_load_tracker_id DESC;
 
 ---
 
+## 2026-05-05 Tableau Public Final Dataset Export
+
+- **Step:** Finalized the Tableau dataset by exporting the gold-layer query result to CSV for use in Tableau Public.
+- **Outcome:** Data source finalized for dashboard build/publish workflow. Export-based refresh was used because Tableau Public does not support a live SQL Server connection in this setup.
+- **Evidence:**
+
+```sql
+SELECT
+    f.month_key,
+    d.calendar_date,
+    d.year_num,
+    d.quarter_num,
+    d.month_num,
+    d.month_name,
+    f.dgs10_avg,
+    f.dgs2_avg,
+    f.t10y2y_avg,
+    f.dff_avg,
+    f.sofr_avg,
+    f.cc_balance_avg,
+    f.consumer_credit_total,
+    f.unemployment_rate,
+    f.cc_delinquency_rate,
+    f.stress_index,
+    f.load_ts_utc
+FROM fantastic_guacamole.gold.fact_consumer_finance_monthly f
+INNER JOIN fantastic_guacamole.gold.dim_date d
+    ON d.date_key = f.month_key
+ORDER BY d.calendar_date;
+```
+
+- **Notes:** This query is the authoritative extract used to populate the Tableau workbook data source file.
+- **Next:** Publish dashboard, capture final screenshots, and complete README/dashboard-link updates. Next Iteration (v2) will update data source to use a python process to fill a google sheets document on a regular schedule to simulate a direct data source connection.
+
+
+
+---
+
 ## SQL Snippet: Latest Run Summary
 
 Run this in SQL Server to quickly summarize recent pipeline activity.
