@@ -17,7 +17,7 @@ Create a repeatable pipeline and dashboard that answers:
   - Rate & Liquidity Pressure
   - Household Credit & Labor
 
-For an in-depth look at pipeline build steps, validations, and evidence snapshots, see `docs/run_history.md`.
+For an in-depth look at pipeline build steps, validations, and evidence snapshots, <a href="https://github.com/carchuleta94/fantastic-guacamole/blob/main/docs/run_history.md"><u>CLICK HERE</u></a>.
 
 ## Live Dashboard
 
