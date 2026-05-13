@@ -22,7 +22,7 @@ For an in-depth look at pipeline build steps, validations, and evidence snapshot
 ## Live Dashboard
 
 - Tableau Public: <a href="https://public.tableau.com/app/profile/christian.archuleta/viz/ConsumerFinanceHealthMonitor/ExecutiveOverview?publish=yes"><u>CLICK HERE</u></a>
-- [![Open Dashboard](docs/dashboard_screenshot_1.png)](https://public.tableau.com/app/profile/christian.archuleta/viz/ConsumerFinanceHealthMonitor/ExecutiveOverview?publish=yes)
+- [![Open Dashboard](docs/dashboard_screenshot_v2.png)](https://public.tableau.com/app/profile/christian.archuleta/viz/ConsumerFinanceHealthMonitor/ExecutiveOverview?publish=yes)
 
 ## Dashboard Preview
 
