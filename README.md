@@ -1,6 +1,6 @@
 ## Consumer Finance Health Monitor
 
-A portfolio to showcase technical ability to design an end to end reporting project.  This highlights skills across all stages beginning with initial EDA and planning, execution of the pipeline build, all the way through to creation and publishing of a comprehensive dashboard with plans for future iteration.
+A portfolio project showcasing end-to-end reporting design. This highlights skills across all stages beginning with initial EDA and planning, execution of the pipeline build, all the way through to creation and publishing of a comprehensive dashboard with plans for future iteration.
 
 ## Objective
 
@@ -30,7 +30,7 @@ The image above is a quick preview. For full interactive access to all three tab
 
 ## What Each Tab Shows (No Finance Background Needed)
 
-- **Executive Overview**: quick health check. KPI cards show where things stand now, and the trend chart shows whether stress is rising or easing versus normal.
+- **Executive Overview**: quick health check. KPI cards with sparklines show where things stand and their recent trajectory, the trend chart shows whether stress is rising or easing versus normal, and a rebased comparison shows how key indicators have moved relative to each other over the trailing 36 months.
 - **Rate & Liquidity Pressure**: shows whether borrowing/funding conditions look tight or loose, using short-term rates and the 10Y-2Y spread.
 - **Household Credit & Labor**: compares debt growth with unemployment and delinquency so you can see whether debt changes look manageable or more concerning.
 
@@ -44,7 +44,7 @@ The image above is a quick preview. For full interactive access to all three tab
 - **Stress Index**: composite signal of stress relative to each input's own history (`0` is long-run baseline).
 - **Unemployment Rate**: share of the labor force actively looking for work but unemployed.
 - **Delinquency Rate**: bank-reported credit card loan delinquency rate (quarterly series).
-- **Total Consumer Credit**: total outstanding non-mortgage consumer debt in this series (shown in trillions in the dashboard).
+- **Total Consumer Credit**: total outstanding non-mortgage consumer debt (shown in trillions in the dashboard).
 
 ## Technical Architecture
 
